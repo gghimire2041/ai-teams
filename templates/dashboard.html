@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Teams AI System</title>
+    <title>Teams AI System - LM Studio Powered</title>
     <style>
         body { 
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
@@ -14,6 +14,11 @@
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             color: white; padding: 20px; border-radius: 10px; margin-bottom: 20px;
         }
+        .lm-studio-status {
+            background: rgba(255,255,255,0.1); padding: 10px; border-radius: 5px; margin-top: 10px;
+        }
+        .status-connected { color: #4CAF50; }
+        .status-disconnected { color: #F44336; }
         .container { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
         .card { 
             background: white; padding: 20px; border-radius: 10px; 
@@ -50,15 +55,57 @@
         .status-pending { background: #6c757d; color: white; }
         .status-completed { background: #28a745; color: white; }
         .status-failed { background: #dc3545; color: white; }
+        .delete-btn { 
+            background: #dc3545; color: white; border: none; 
+            padding: 5px 10px; border-radius: 3px; cursor: pointer;
+            font-size: 12px; margin-left: 10px;
+        }
+        .delete-btn:hover { background: #c82333; }
+        .agent-controls { 
+            display: flex; justify-content: space-between; 
+            align-items: center; margin: 10px 0;
+        }
+        .dropdown { 
+            width: 100%; padding: 8px; border: 1px solid #ddd; 
+            border-radius: 4px; margin-top: 5px;
+        }
+        .form-row { 
+            display: grid; grid-template-columns: 1fr 1fr; 
+            gap: 10px; margin: 10px 0; 
+        }
+        .agent-section { 
+            border: 2px solid #667eea; border-radius: 10px; 
+            padding: 15px; margin: 10px 0; background: #f8f9ff;
+        }
+        .task-assignment { 
+            background: #e8f4f8; padding: 10px; 
+            border-radius: 5px; margin: 5px 0;
+        }
+        .ai-section {
+            background: linear-gradient(45deg, #667eea, #764ba2);
+            color: white; padding: 15px; border-radius: 10px;
+            margin: 10px 0;
+        }
     </style>
 </head>
 <body>
     <div class="header">
         <h1>🤖 Teams AI System</h1>
-        <p>Collaborative AI Agents for Software Development</p>
+        <p>Collaborative AI Agents for Software Development - Powered by LM Studio</p>
         {% if current_project %}
         <p><strong>Current Project:</strong> {{ current_project.name }}</p>
         {% endif %}
+        
+        <div class="lm-studio-status">
+            <strong>🧠 LM Studio Status:</strong>
+            {% if status.lm_studio_status.connected %}
+            <span class="status-connected">✅ Connected</span>
+            {% else %}
+            <span class="status-disconnected">❌ Disconnected</span>
+            {% endif %}
+            <br>
+            <small>URL: {{ status.lm_studio_status.url }} | Model: {{ status.lm_studio_status.current_model }}</small>
+        </div>
     </div>
 
     <div class="container">
@@ -82,12 +129,42 @@
                     <p>Queue Size</p>
                 </div>
             </div>
+            
+            <div class="ai-section">
+                <h3>🧠 AI Model Information</h3>
+                <p><strong>Temperature:</strong> {{ status.lm_studio_status.temperature }}</p>
+                <p><strong>Max Tokens:</strong> {{ status.lm_studio_status.max_tokens }}</p>
+                <p><strong>Available Models:</strong> {{ status.lm_studio_status.models|join(', ') if status.lm_studio_status.models else 'None loaded' }}</p>
+            </div>
         </div>
 
         <div class="card">
             <h2>🚀 Quick Actions</h2>
             
-            <h3>Create New Project</h3>
+            <div class="agent-section">
+                <h3>👥 Create Custom Agent</h3>
+                <form id="agentForm">
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>Agent Name:</label>
+                            <input type="text" name="agent_name" placeholder="e.g., Sarah CodeMaster" required>
+                        </div>
+                        <div class="form-group">
+                            <label>Agent Type:</label>
+                            <select name="agent_type" class="dropdown" required>
+                                <option value="">Select Agent Type</option>
+                                <option value="coder">🧑‍💻 Coder (Code Generation & Debugging)</option>
+                                <option value="tester">🧪 Tester (Testing & Quality Assurance)</option>
+                                <option value="integrator">🔧 Integrator (Deployment & Integration)</option>
+                                <option value="documenter">📚 Documenter (Documentation & Guides)</option>
+                            </select>
+                        </div>
+                    </div>
+                    <button type="submit" class="btn">Create Agent</button>
+                </form>
+            </div>
+            
+            <h3>🚀 Create New Project</h3>
             <form id="projectForm">
                 <div class="form-group">
                     <input type="text" name="name" placeholder="Project Name" required>
@@ -98,37 +175,59 @@
                 <button type="submit" class="btn">Create Project</button>
             </form>
 
-            <h3>Create New Task</h3>
-            <form id="taskForm">
-                <div class="form-group">
-                    <input type="text" name="name" placeholder="Task Name" required>
-                </div>
-                <div class="form-group">
-                    <textarea name="description" placeholder="Task Description"></textarea>
-                </div>
-                <div class="form-group">
-                    <input type="text" name="dependencies" placeholder="Dependencies (comma-separated task IDs)">
-                </div>
-                <div class="form-group">
-                    <input type="number" name="priority" value="1" min="1" max="10" placeholder="Priority">
-                </div>
-                <button type="submit" class="btn">Create Task</button>
-            </form>
+            <div class="task-assignment">
+                <h3>📋 Create New Task</h3>
+                <form id="taskForm">
+                    <div class="form-group">
+                        <input type="text" name="name" placeholder="Task Name" required>
+                    </div>
+                    <div class="form-group">
+                        <textarea name="description" placeholder="Task Description"></textarea>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>Assign to Agent (Optional):</label>
+                            <select name="assigned_agent" class="dropdown" id="agentDropdown">
+                                <option value="">Auto-assign based on task type</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label>Priority (1-10):</label>
+                            <input type="number" name="priority" value="1" min="1" max="10" placeholder="Priority">
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <input type="text" name="dependencies" placeholder="Dependencies (comma-separated task IDs)">
+                    </div>
+                    <button type="submit" class="btn">Create Task</button>
+                </form>
+            </div>
         </div>
     </div>
 
     <div class="container">
         <div class="card">
             <h2>🤖 AI Agents</h2>
+            <div class="agent-controls">
+                <h3>Your Team</h3>
+                <button onclick="refreshAgents()" class="btn">Refresh Agents</button>
+            </div>
             {% for agent in status.agents %}
             <div class="agent-item">
-                <strong>{{ agent.name }}</strong> ({{ agent.agent_type }})
-                <span class="status-badge status-{{ agent.status }}">{{ agent.status }}</span>
-                <br>
-                <small>Capabilities: {{ agent.capabilities|join(', ') }}</small>
-                {% if agent.current_task %}
-                <br><small>Current Task: {{ agent.current_task }}</small>
-                {% endif %}
+                <div class="agent-controls">
+                    <div>
+                        <strong>{{ agent.name }}</strong> ({{ agent.agent_type }})
+                        <span class="status-badge status-{{ agent.status }}">{{ agent.status }}</span>
+                        <br>
+                        <small>Capabilities: {{ agent.capabilities|join(', ') }}</small>
+                        {% if agent.current_task %}
+                        <br><small>Current Task: {{ agent.current_task }}</small>
+                        {% endif %}
+                    </div>
+                    {% if not agent.id.endswith('-default') %}
+                    <button onclick="deleteAgent('{{ agent.id }}')" class="delete-btn">Delete</button>
+                    {% endif %}
+                </div>
             </div>
             {% endfor %}
         </div>
@@ -147,18 +246,125 @@
                 {% if task.output %}
                 <br><small>Output: {{ task.output[:100] }}...</small>
                 {% endif %}
+                {% if task.error_message %}
+                <br><small style="color: red;">Error: {{ task.error_message[:100] }}...</small>
+                {% endif %}
             </div>
             {% endfor %}
         </div>
     </div>
 
     <script>
-        // Auto-refresh every 5 seconds
-        setInterval(() => {
+        async function loadAvailableAgents() {
+            try {
+                const response = await fetch('/api/available_agents');
+                const agents = await response.json();
+                const dropdown = document.getElementById('agentDropdown');
+                
+                dropdown.innerHTML = '<option value="">Auto-assign based on task type</option>';
+                
+                agents.forEach(agent => {
+                    const option = document.createElement('option');
+                    option.value = agent.id;
+                    option.textContent = `${agent.name} (${agent.type})`;
+                    dropdown.appendChild(option);
+                });
+            } catch (error) {
+                console.error('Error loading agents:', error);
+            }
+        }
+        
+        async function refreshAgents() {
             window.location.reload();
-        }, 5000);
+        }
+        
+        async function deleteAgent(agentId) {
+            if (!confirm('Are you sure you want to delete this agent?')) {
+                return;
+            }
+            
+            try {
+                const formData = new FormData();
+                formData.append('agent_id', agentId);
+                
+                const response = await fetch('/delete_agent', {
+                    method: 'POST',
+                    body: formData
+                });
+                const result = await response.json();
+                
+                if (result.success) {
+                    alert('Agent deleted successfully!');
+                    window.location.reload();
+                } else {
+                    alert('Error: ' + result.error);
+                }
+            } catch (error) {
+                alert('Error deleting agent: ' + error);
+            }
+        }
+        
+        document.addEventListener('DOMContentLoaded', () => {
+            loadAvailableAgents();
+        });
+        
+        let refreshInterval;
+        
+        function startAutoRefresh() {
+            refreshInterval = setInterval(() => {
+                const projectForm = document.getElementById('projectForm');
+                const taskForm = document.getElementById('taskForm');
+                const agentForm = document.getElementById('agentForm');
+                
+                const projectHasData = Array.from(projectForm.elements).some(el => el.value.trim() !== '');
+                const taskHasData = Array.from(taskForm.elements).some(el => el.value.trim() !== '');
+                const agentHasData = Array.from(agentForm.elements).some(el => el.value.trim() !== '');
+                
+                if (!projectHasData && !taskHasData && !agentHasData) {
+                    loadAvailableAgents();
+                    window.location.reload();
+                }
+            }, 15000);
+        }
+        
+        startAutoRefresh();
+        
+        document.addEventListener('focusin', (e) => {
+            if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA' || e.target.tagName === 'SELECT') {
+                clearInterval(refreshInterval);
+            }
+        });
+        
+        document.addEventListener('focusout', (e) => {
+            if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA' || e.target.tagName === 'SELECT') {
+                setTimeout(startAutoRefresh, 5000);
+            }
+        });
 
-        // Handle project form
+        document.getElementById('agentForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const formData = new FormData(e.target);
+            
+            try {
+                const response = await fetch('/create_agent', {
+                    method: 'POST',
+                    body: formData
+                });
+                const result = await response.json();
+                
+                if (result.success) {
+                    alert(`Agent "${result.agent.name}" created successfully!`);
+                    e.target.reset();
+                    loadAvailableAgents();
+                    window.location.reload();
+                } else {
+                    alert('Error: ' + result.error);
+                }
+            } catch (error) {
+                alert('Error creating agent: ' + error);
+            }
+        });
+
         document.getElementById('projectForm').addEventListener('submit', async (e) => {
             e.preventDefault();
             const formData = new FormData(e.target);
@@ -182,7 +388,6 @@
             }
         });
 
-        // Handle task form
         document.getElementById('taskForm').addEventListener('submit', async (e) => {
             e.preventDefault();
             const formData = new FormData(e.target);
@@ -197,6 +402,7 @@
                 if (result.success) {
                     alert('Task created successfully!');
                     e.target.reset();
+                    loadAvailableAgents();
                     window.location.reload();
                 } else {
                     alert('Error: ' + result.error);
