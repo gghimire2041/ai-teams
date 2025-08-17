@@ -1,44 +1,67 @@
 # 🤖 Teams AI System
 
-[![Python 3.8+](https://img.shields.io/badge/python-3.8+-blue.svg)](https://www.python.org/downloads/)
-[![Flask](https://img.shields.io/badge/flask-2.3.3-green.svg)](https://flask.palletsprojects.com/)
+[![Python 3.9+](https://img.shields.io/badge/python-3.9+-blue.svg)](https://www.python.org/downloads/)
+[![Flask](https://img.shields.io/badge/flask-3.0+-green.svg)](https://flask.palletsprojects.com/)
 [![LM Studio](https://img.shields.io/badge/LM%20Studio-Local%20AI-brightgreen.svg)](https://lmstudio.ai/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![Build Status](https://img.shields.io/badge/build-passing-brightgreen.svg)](https://github.com/gghimire2041/ai-teams)
+[![Version](https://img.shields.io/badge/version-2.0.0-blue.svg)](https://github.com/gghimire2041/ai-teams/releases)
 
-> **A fully functional multi-agent AI system where specialized AI agents collaborate to develop software projects autonomously using local LM Studio inference.**
+> **A production-ready multi-agent AI system where specialized AI agents collaborate to develop software projects autonomously using local LM Studio inference.**
 
-Teams AI System demonstrates the future of software development where AI agents work together like a real development team - writing code, creating tests, integrating changes, and generating documentation automatically using locally hosted AI models.
+🎯 **Teams AI System** represents the next evolution of software development where AI agents work together like a real development team - writing production-quality code, creating comprehensive tests, managing deployments, and generating professional documentation automatically using locally hosted AI models.
+
+✨ **Now with full JSON serialization support, enhanced agent management, and production-ready stability!**
 
 ## 🎯 Key Features
 
 ### 🚀 **Multi-Agent Collaboration**
-- **Coder Agent**: Generates clean, well-commented code with proper error handling
-- **Tester Agent**: Creates comprehensive test suites with edge case coverage
-- **Integrator Agent**: Manages deployments, CI/CD pipelines, and code integration
-- **Documenter Agent**: Generates API documentation, README files, and user guides
+- **🧑‍💻 Coder Agent**: Generates production-ready code with proper documentation, error handling, and security best practices
+- **🧪 Tester Agent**: Creates comprehensive test suites with edge cases, mocking, and coverage analysis
+- **🔧 Integrator Agent**: Manages CI/CD pipelines, containerization, and deployment automation
+- **📚 Documenter Agent**: Generates API docs, user guides, README files, and technical specifications
+- **👥 Custom Agents**: Create specialized agents with unique names and capabilities
 
-### 🧠 **Local AI Integration**
-- **LM Studio Integration**: Uses locally hosted models (GPT-OSS-20B recommended)
-- **Offline Operation**: No external API dependencies or costs
-- **Privacy First**: All AI processing happens on your machine
-- **Customizable Models**: Easy to switch between different local models
+### 🧠 **Advanced AI Integration**
+- **🔗 LM Studio Integration**: Full support for local models with fallback responses
+- **🔄 Multi-Endpoint Support**: Automatically tries multiple API endpoints for reliability
+- **⚡ Optimized Performance**: Intelligent caching and connection pooling
+- **🎛️ Configurable Parameters**: Temperature, max tokens, top-p, and model selection
+- **🔒 Privacy First**: All AI processing happens locally on your machine
+- **📱 Offline Operation**: No internet required once models are downloaded
 
-### 🔄 **Intelligent Task Orchestration**
-- Dependency-aware task scheduling
-- Priority-based assignment algorithms
-- Real-time progress tracking with web dashboard
-- Automatic error recovery and graceful fallbacks
+### 🎯 **Intelligent Task Orchestration**
+- **📋 Smart Assignment**: Keyword-based automatic agent selection
+- **🔗 Dependency Management**: Tasks wait for prerequisites to complete
+- **⚖️ Priority Queuing**: High-priority tasks get processed first
+- **🔄 Real-time Execution**: Live task processing with status updates
+- **🛡️ Error Recovery**: Graceful handling of failures with detailed logging
+- **📊 Progress Tracking**: Visual dashboard showing all agent activities
 
-### 📊 **Advanced Memory Management**
-- **Short-term Memory**: Session-based context for ongoing conversations
-- **Long-term Memory**: Persistent knowledge storage using FAISS vector database
-- **Episodic Memory**: Records of past interactions and agent decisions
+### 💾 **Advanced Memory System**
+- **⚡ Short-term Memory**: Session context for ongoing conversations
+- **🧠 Long-term Memory**: FAISS vector database for persistent knowledge
+- **📚 Episodic Memory**: Complete history of agent actions and decisions
+- **🔍 Semantic Search**: Find relevant past experiences automatically
+- **💡 Learning Capability**: Agents improve based on past interactions
 
-### 🌐 **Real-time Web Interface**
-- Live agent status monitoring
-- Interactive project and task management
-- System performance metrics dashboard
-- Custom agent creation and management
+### 🌐 **Production-Ready Web Interface**
+- **📱 Responsive Dashboard**: Works on desktop, tablet, and mobile
+- **⚡ Real-time Updates**: Live agent status and task progress
+- **🎨 Modern UI**: Clean, intuitive interface with beautiful styling
+- **🔧 Agent Management**: Create, delete, and monitor custom agents
+- **📊 System Metrics**: Performance monitoring and resource usage
+- **🎛️ Configuration Panel**: Easy environment and model management
+
+### ✨ **Latest Enhancements (v2.0.0)**
+- **🔧 Fixed JSON Serialization**: Complete resolution of enum and datetime serialization issues
+- **📦 Enhanced Database Management**: Improved SQLite operations with proper error handling
+- **🚀 Optimized Performance**: Better memory management and faster response times
+- **🔒 Robust Error Handling**: Comprehensive exception management throughout the system
+- **📋 Agent Lifecycle Management**: Full CRUD operations for agent management
+- **🎯 Task Assignment Control**: Both automatic and manual agent assignment options
+- **📊 Improved Logging**: Detailed logging for debugging and monitoring
+- **🔄 Auto-recovery**: System automatically handles and recovers from common issues
 
 ## 🏗️ System Architecture
 
@@ -92,38 +115,43 @@ Teams AI System demonstrates the future of software development where AI agents 
 
 ### Installation
 
-1. **Clone or download the system files**
+1. **Clone the repository**
    ```bash
-   # If using git:
-   git clone <your-repo-url>
-   cd teams-ai-system
-   
-   # Or simply save the teams_ai_system.py file to a new directory
+   git clone https://github.com/gghimire2041/ai-teams.git
+   cd ai-teams
    ```
 
-2. **Create virtual environment**
+2. **Create and activate virtual environment**
    ```bash
-   python -m venv teams_ai_env
+   python -m venv venv
    
    # On Windows:
-   teams_ai_env\Scripts\activate
+   venv\Scripts\activate
    
    # On macOS/Linux:
-   source teams_ai_env/bin/activate
+   source venv/bin/activate
    ```
 
 3. **Install dependencies**
    ```bash
-   pip install Flask==2.3.3 numpy==1.24.3 faiss-cpu==1.7.4 requests==2.31.0
+   # Option 1: Install from requirements.txt
+   pip install -r requirements.txt
+   
+   # Option 2: Install manually
+   pip install Flask>=3.0.0 numpy>=1.24.0 faiss-cpu>=1.7.0 requests>=2.31.0
    ```
 
 4. **Configure environment** (optional)
    ```bash
    # Set LM Studio URL if different from default
    export LM_STUDIO_URL="http://localhost:1234"
+   export AI_TEMPERATURE="0.7"
+   export AI_MAX_TOKENS="2048"
    
    # On Windows:
    set LM_STUDIO_URL=http://localhost:1234
+   set AI_TEMPERATURE=0.7
+   set AI_MAX_TOKENS=2048
    ```
 
 ### Running the System
@@ -141,10 +169,10 @@ Teams AI System demonstrates the future of software development where AI agents 
    🤖 Connecting to LM Studio...
    ✅ LM Studio connection verified
    ✅ Teams AI System initialized with default agents and sample project
-   🌐 Web interface available at: http://localhost:8080
+   🌐 Web interface available at: http://localhost:8081
    ```
 
-4. **Open your browser** and navigate to **http://localhost:8080**
+4. **Open your browser** and navigate to **http://localhost:8081**
 
 ## 📋 Usage Guide
 
