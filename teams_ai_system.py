@@ -401,7 +401,9 @@ class DatabaseManager:
     
     def __init__(self, db_path: str = "data/teams.db"):
         self.db_path = db_path
-        os.makedirs(os.path.dirname(db_path), exist_ok=True)
+        db_dir = os.path.dirname(db_path)
+        if db_dir:  # Only create directory if path has a directory component
+            os.makedirs(db_dir, exist_ok=True)
         self.init_database()
     
     def init_database(self):
@@ -1282,6 +1284,49 @@ class TaskOrchestrator:
         }
 
 # ============================================================================
+# SERIALIZATION HELPERS
+# ============================================================================
+
+def serialize_agent(agent: Agent) -> Dict[str, Any]:
+    """Convert agent to JSON-serializable dictionary"""
+    return {
+        "id": agent.id,
+        "name": agent.name,
+        "agent_type": agent.agent_type.value,
+        "status": agent.status,
+        "current_task": agent.current_task,
+        "capabilities": agent.capabilities,
+        "created_at": agent.created_at.isoformat()
+    }
+
+def serialize_task(task: Task) -> Dict[str, Any]:
+    """Convert task to JSON-serializable dictionary"""
+    return {
+        "id": task.id,
+        "name": task.name,
+        "description": task.description,
+        "status": task.status.value,
+        "assigned_agent": task.assigned_agent,
+        "created_at": task.created_at.isoformat(),
+        "updated_at": task.updated_at.isoformat(),
+        "dependencies": task.dependencies,
+        "output": task.output,
+        "error_message": task.error_message,
+        "priority": task.priority
+    }
+
+def serialize_project(project: Project) -> Dict[str, Any]:
+    """Convert project to JSON-serializable dictionary"""
+    return {
+        "id": project.id,
+        "name": project.name,
+        "description": project.description,
+        "status": project.status,
+        "created_at": project.created_at.isoformat(),
+        "repository_path": project.repository_path
+    }
+
+# ============================================================================
 # WEB INTERFACE
 # ============================================================================
 
@@ -1355,7 +1400,7 @@ def create_project():
         project = orchestrator.create_project(name, description)
         return jsonify({
             "success": True,
-            "project": asdict(project)
+            "project": serialize_project(project)
         })
     except Exception as e:
         logger.error(f"Create project error: {e}")
@@ -1376,7 +1421,7 @@ def create_agent():
         
         return jsonify({
             "success": True,
-            "agent": asdict(agent)
+            "agent": serialize_agent(agent)
         })
     except Exception as e:
         logger.error(f"Create agent error: {e}")
@@ -1421,7 +1466,7 @@ def create_task():
         task = orchestrator.create_task(name, description, assigned_agent, dependencies, priority)
         return jsonify({
             "success": True,
-            "task": asdict(task)
+            "task": serialize_task(task)
         })
     except Exception as e:
         logger.error(f"Create task error: {e}")
@@ -1941,10 +1986,10 @@ def main():
     print("🎯 Create custom agents and tasks through the web interface!")
     print("🧠 AI responses powered by your local LM Studio model")
     print("🌐 Starting web interface...")
-    print("🌐 Web interface available at: http://localhost:8080")
+    print("🌐 Web interface available at: http://localhost:8081")
     
     try:
-        app.run(host='0.0.0.0', port=8080, debug=False)
+        app.run(host='0.0.0.0', port=8081, debug=False)
     except KeyboardInterrupt:
         print("\n🛑 Shutting down Teams AI System...")
         orchestrator.running = False
