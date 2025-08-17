@@ -40,7 +40,7 @@ class LMStudioClient:
     
     def __init__(self, base_url: str = None):
         self.base_url = base_url or os.getenv('LM_STUDIO_URL', 'http://localhost:1234')
-        self.model_name = os.getenv('LM_STUDIO_MODEL', 'openai/gpt-oss-20b')
+        self.model_name = os.getenv('LM_STUDIO_MODEL', 'local-model')
         self.timeout = int(os.getenv('LM_STUDIO_TIMEOUT', '120'))
         
         # AI parameters
@@ -61,21 +61,55 @@ class LMStudioClient:
     def verify_connection(self) -> bool:
         """Verify LM Studio is running and accessible"""
         try:
-            response = self.session.get(f"{self.base_url}/v1/models", timeout=10)
-            if response.status_code == 200:
-                models = response.json()
-                logger.info(f"✅ LM Studio connection verified. Available models: {len(models.get('data', []))}")
-                return True
-            else:
-                logger.warning(f"⚠️ LM Studio returned status {response.status_code}")
-                return False
-        except requests.exceptions.RequestException as e:
+            # Try different common endpoints
+            endpoints_to_try = [
+                f"{self.base_url}/v1/models",
+                f"{self.base_url}/models",
+                f"{self.base_url}/api/v1/models",
+                f"{self.base_url}/health",
+                f"{self.base_url}/"
+            ]
+            
+            for endpoint in endpoints_to_try:
+                try:
+                    response = self.session.get(endpoint, timeout=10)
+                    if response.status_code == 200:
+                        logger.info(f"✅ LM Studio connection verified at {endpoint}")
+                        return True
+                except requests.exceptions.RequestException:
+                    continue
+            
+            logger.warning(f"⚠️ Could not verify LM Studio connection")
+            return False
+            
+        except Exception as e:
             logger.error(f"❌ Cannot connect to LM Studio at {self.base_url}: {e}")
             logger.error("Please ensure LM Studio is running with a model loaded")
             return False
     
+    def _fallback_response(self, user_input: str) -> str:
+        """Provide a fallback response when LM Studio is unavailable"""
+        responses = {
+            "code": "# Code generation currently unavailable\n# Please check LM Studio connection\nprint('Hello World')",
+            "test": "# Test generation currently unavailable\ndef test_example():\n    assert True  # Placeholder test",
+            "integrate": "# Integration task noted\n# Manual intervention required",
+            "document": "# Documentation task\n\nThis feature requires LM Studio to be running with a loaded model."
+        }
+        
+        user_lower = user_input.lower()
+        if any(keyword in user_lower for keyword in ['code', 'implement', 'develop']):
+            return responses["code"]
+        elif any(keyword in user_lower for keyword in ['test', 'verify']):
+            return responses["test"]
+        elif any(keyword in user_lower for keyword in ['integrate', 'deploy']):
+            return responses["integrate"]
+        else:
+            return responses["document"]
+    
     def call_lm_studio(self, messages: List[Dict[str, str]], **kwargs) -> str:
-        """Make a request to LM Studio API"""
+        """Make a request to LM Studio API with multiple endpoint fallbacks"""
+        
+        # Prepare the payload
         payload = {
             "model": self.model_name,
             "messages": messages,
@@ -86,49 +120,112 @@ class LMStudioClient:
             "presence_penalty": kwargs.get('presence_penalty', 0.0)
         }
         
-        try:
-            # Create a fresh request (don't reuse session for now)
-            response = requests.post(
-                f"{self.base_url}/v1/chat/completions",
-                json=payload,
-                headers={'Content-Type': 'application/json'},
-                timeout=self.timeout
-            )
-            
-            if response.status_code == 200:
-                result = response.json()
-                content = result['choices'][0]['message']['content']
-                logger.info(f"✅ LM Studio API call successful")
-                return content.strip()
-            else:
-                logger.error(f"LM Studio API error {response.status_code}: {response.text[:200]}")
-                return self._fallback_response(messages[-1]['content'])
+        # Try different possible endpoints for LM Studio
+        endpoints_to_try = [
+            f"{self.base_url}/v1/chat/completions",
+            f"{self.base_url}/api/v1/chat/completions",
+            f"{self.base_url}/chat/completions",
+            f"{self.base_url}/v1/completions",
+            f"{self.base_url}/completions"
+        ]
+        
+        last_error = None
+        
+        for endpoint in endpoints_to_try:
+            try:
+                logger.info(f"Trying LM Studio endpoint: {endpoint}")
                 
-        except requests.exceptions.Timeout:
-            logger.error("LM Studio request timed out")
-            return self._fallback_response(messages[-1]['content'])
-        except requests.exceptions.RequestException as e:
-            logger.error(f"LM Studio request failed: {e}")
-            return self._fallback_response(messages[-1]['content'])
-        except Exception as e:
-            logger.error(f"Unexpected error calling LM Studio: {e}")
-            return self._fallback_response(messages[-1]['content'])
-
-    
+                response = requests.post(
+                    endpoint,
+                    json=payload,
+                    headers={'Content-Type': 'application/json'},
+                    timeout=self.timeout
+                )
+                
+                if response.status_code == 200:
+                    try:
+                        result = response.json()
+                        
+                        # Handle different response formats
+                        if 'choices' in result and len(result['choices']) > 0:
+                            if 'message' in result['choices'][0]:
+                                content = result['choices'][0]['message']['content']
+                            elif 'text' in result['choices'][0]:
+                                content = result['choices'][0]['text']
+                            else:
+                                content = str(result['choices'][0])
+                        elif 'response' in result:
+                            content = result['response']
+                        elif 'text' in result:
+                            content = result['text']
+                        else:
+                            content = str(result)
+                        
+                        logger.info(f"✅ LM Studio API call successful via {endpoint}")
+                        return content.strip()
+                        
+                    except (KeyError, IndexError, ValueError) as e:
+                        logger.error(f"Error parsing LM Studio response: {e}")
+                        logger.error(f"Response: {response.text[:200]}")
+                        continue
+                        
+                else:
+                    logger.warning(f"LM Studio endpoint {endpoint} returned status {response.status_code}")
+                    last_error = f"HTTP {response.status_code}: {response.text[:200]}"
+                    continue
+                    
+            except requests.exceptions.Timeout:
+                logger.warning(f"Timeout for endpoint {endpoint}")
+                last_error = "Request timeout"
+                continue
+                
+            except requests.exceptions.RequestException as e:
+                logger.warning(f"Request failed for endpoint {endpoint}: {e}")
+                last_error = str(e)
+                continue
+                
+            except Exception as e:
+                logger.warning(f"Unexpected error for endpoint {endpoint}: {e}")
+                last_error = str(e)
+                continue
+        
+        # If all endpoints failed, use fallback
+        logger.error(f"All LM Studio endpoints failed. Last error: {last_error}")
+        user_message = messages[-1]['content'] if messages else "general task"
+        return self._fallback_response(user_message)
     
     def get_status(self) -> Dict[str, Any]:
         """Get LM Studio status information"""
         try:
-            # Check health
-            health_response = self.session.get(f"{self.base_url}/v1/health", timeout=5)
-            health_status = health_response.status_code == 200
-            
-            # Get models
-            models_response = self.session.get(f"{self.base_url}/v1/models", timeout=5)
+            # Check health with multiple endpoints
+            health_status = False
             models = []
-            if models_response.status_code == 200:
-                models_data = models_response.json()
-                models = [model.get('id', 'unknown') for model in models_data.get('data', [])]
+            
+            health_endpoints = [
+                f"{self.base_url}/v1/models",
+                f"{self.base_url}/models",
+                f"{self.base_url}/health",
+                f"{self.base_url}/"
+            ]
+            
+            for endpoint in health_endpoints:
+                try:
+                    health_response = self.session.get(endpoint, timeout=5)
+                    if health_response.status_code == 200:
+                        health_status = True
+                        
+                        # Try to extract model information
+                        try:
+                            data = health_response.json()
+                            if 'data' in data:
+                                models = [model.get('id', 'unknown') for model in data['data']]
+                            elif 'models' in data:
+                                models = data['models']
+                        except:
+                            pass
+                        break
+                except:
+                    continue
             
             return {
                 "connected": health_status,
@@ -136,7 +233,8 @@ class LMStudioClient:
                 "models": models,
                 "current_model": self.model_name,
                 "temperature": self.temperature,
-                "max_tokens": self.max_tokens
+                "max_tokens": self.max_tokens,
+                "last_error": None if health_status else "Could not connect to any LM Studio endpoint"
             }
             
         except Exception as e:
@@ -145,9 +243,9 @@ class LMStudioClient:
                 "url": self.base_url,
                 "error": str(e),
                 "models": [],
-                "current_model": self.model_name
+                "current_model": self.model_name,
+                "last_error": str(e)
             }
-
 # ============================================================================
 # DATA MODELS & ENUMS
 # ============================================================================
