@@ -354,7 +354,3 @@ This project is provided as-is for educational and development purposes. Modify 
 - [Git Documentation](https://git-scm.com/doc)
 
 ---
-
-**Built with ❤️ for the AI development community**
-
-*Teams AI System - Where artificial intelligence meets collaborative software development*
